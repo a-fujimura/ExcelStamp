@@ -1,9 +1,58 @@
 ﻿@page "/"
+@inject IHttpClientFactory ClientFactory
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="form-group">
+    <label>
+        会社名：
+        <input @bind="compInput" size="50" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        ユーザー名：
+        <input @bind="userInput" size="50" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        日付文字列：
+        <input @bind="datestrInput" size="50" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        権限文字列：
+        <input @bind="powerInput" size="50" />
+    </label>
+</div>
+<button @onclick="Send">作成</button>
 
-Welcome to your new app.
+@code {
+    private string? compInput;
+    private string? userInput;
+    private string? datestrInput;
+    private string? powerInput;
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+    private async Task Send()
+    {
+        byte[] stampBinary;
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:7009" + "/api/stamp/getstamp/" + compInput + "/" + userInput + "/" + powerInput + "/" + datestrInput);
+            var client = ClientFactory.CreateClient();
+            var response = await client.SendAsync(request);
+            stampBinary = await response.Content.ReadAsByteArrayAsync();
+        }
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:7009" + "/api/sealstamp");
+            var content = new MultipartFormDataContent();
+            content.Add(new ByteArrayContent(stampBinary), "file", "stamp.bin");
+            var client = ClientFactory.CreateClient();
+            {
+                request.Content = content;
+                await client.SendAsync(request);
+            }
+        }
+    }
+}
